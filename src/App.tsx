@@ -3,18 +3,45 @@ import Airtable from "airtable";
 import { FormEvent, useState } from "react";
 import { useAppSelector, useAppDispatch } from "./hooks";
 import { login, selectUser } from "./userSlice";
+import ClassCard from "./classCard";
 
 function App(): JSX.Element {
   const user = useAppSelector(selectUser);
-  console.log(user);
   const dispatch = useAppDispatch();
   let [username, setUsername] = useState("");
+  let [isloading, setIsloading] = useState(false);
   var base = new Airtable({ apiKey: "keyhCC6Ohm7BfYFKB" }).base(
     "app8ZbcPx7dkpOnP0"
   );
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    setIsloading(true);
     e.preventDefault();
-    dispatch(login(username));
+    base("Students")
+      .select({
+        filterByFormula: `{Name} = '${username}'`,
+      })
+      .firstPage(function (err, records: any) {
+        if (err) {
+          console.error(err);
+          return;
+        }
+        if (records.length === 0) {
+          alert("User not found");
+          return;
+        }
+        let classes: { name: string; students: string[] }[] = [];
+        base("Classes").find(
+          records[0].get("Classes"),
+          function (err, record: any) {
+            classes.push({
+              name: record.get("Name"),
+              students: record.get("Students"),
+            });
+          }
+        );
+        dispatch(login({ name: username, classes }));
+        setIsloading(false);
+      });
   };
   // base("Students")
   //   .select({
@@ -49,19 +76,24 @@ function App(): JSX.Element {
   return (
     <div>
       <div className='form'>
-        <form onSubmit={(e: FormEvent<HTMLFormElement>) => handleSubmit(e)}>
-          <input
-            type='text'
-            name='username'
-            id='username'
-            value={username}
-            onChange={(e) => {
-              setUsername(e.target.value);
-            }}
-          />
-          <button>login</button>
-        </form>
-        <p>{user.name}</p>
+        {user.state == "out" && !isloading ? (
+          <form onSubmit={(e: FormEvent<HTMLFormElement>) => handleSubmit(e)}>
+            <input
+              type='text'
+              name='username'
+              id='username'
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+              }}
+            />
+            <button>login</button>
+          </form>
+        ) : isloading ? (
+          <div>Loading...</div>
+        ) : (
+          <div>{user.name}</div>
+        )}
       </div>
     </div>
   );

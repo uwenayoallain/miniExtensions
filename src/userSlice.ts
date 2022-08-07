@@ -3,11 +3,13 @@ import { RootState } from "./store";
 
 export interface userState {
   name: string;
-  classes: { name: string; students: string[] }[];
+  state: "out" | "in";
+  classes: {name:string, students:string[]}[];
 }
 
 const initialState: userState = {
   name: "",
+  state: "out",
   classes: [],
 };
 
@@ -15,8 +17,13 @@ export const userSlice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    login: (state, action: PayloadAction<string>): void => {
-      state.name = action.payload;
+    login: (
+      state,
+      action: PayloadAction<{ name: string; classes: {name:string, students:string[]}[] }>
+    ): void => {
+      state.name = action.payload.name;
+      state.classes = action.payload.classes;
+      state.state = "in";
     },
   },
 });
