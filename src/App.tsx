@@ -1,8 +1,8 @@
 import "./App.css";
 import Airtable from "airtable";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useAppSelector, useAppDispatch } from "./hooks";
-import { login, selectUser } from "./userSlice";
+import { addClasses, login, selectUser } from "./userSlice";
 import ClassCard from "./classCard";
 
 function App(): JSX.Element {
@@ -47,10 +47,13 @@ function App(): JSX.Element {
             setClasses((prevClasses) => [...prevClasses, classObj]);
           });
         });
+        dispatch(login(username));
+        setIsloading(false);
       });
-    dispatch(login({ name: username, classes }));
-    setIsloading(false);
   };
+  useEffect(() => {
+    if (!isloading && user.state == "in") dispatch(addClasses(classes));
+  }, [user.state, isloading, classes, dispatch]);
   // base("Students")
   //   .select({
   //     filterByFormula: `{Name} = '${key}'`,
