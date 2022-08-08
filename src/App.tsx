@@ -6,10 +6,15 @@ import { login, selectUser } from "./userSlice";
 import ClassCard from "./classCard";
 
 function App(): JSX.Element {
+  interface classObj {
+    name: string;
+    students: string[];
+  }
   const user = useAppSelector(selectUser);
   const dispatch = useAppDispatch();
   let [username, setUsername] = useState("");
   let [isloading, setIsloading] = useState(false);
+  let [classes, setClasses] = useState<classObj[]>([]);
   var base = new Airtable({ apiKey: "keyhCC6Ohm7BfYFKB" }).base(
     "app8ZbcPx7dkpOnP0"
   );
@@ -29,19 +34,22 @@ function App(): JSX.Element {
           alert("User not found");
           return;
         }
-        let classes: { name: string; students: string[] }[] = [];
-        base("Classes").find(
-          records[0].get("Classes"),
-          function (err, record: any) {
-            classes.push({
+        records[0].get("Classes").map((classId: string) => {
+          base("Classes").find(classId, function (err, record: any) {
+            if (err) {
+              console.error(err);
+              return;
+            }
+            const classObj: classObj = {
               name: record.get("Name"),
               students: record.get("Students"),
-            });
-          }
-        );
-        dispatch(login({ name: username, classes }));
-        setIsloading(false);
+            };
+            setClasses((prevClasses) => [...prevClasses, classObj]);
+          });
+        });
       });
+    dispatch(login({ name: username, classes }));
+    setIsloading(false);
   };
   // base("Students")
   //   .select({
@@ -72,7 +80,6 @@ function App(): JSX.Element {
   //       });
   //     });
   //   });
-
   return (
     <div>
       <div className='form'>
